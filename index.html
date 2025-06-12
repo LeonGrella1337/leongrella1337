@@ -281,15 +281,22 @@
         async function handleRegister(e) {
             e.preventDefault();
             const { nickname, team, email, password } = e.target.elements;
+            const isAdminAccount = email.value.toLowerCase() === 'admin@gamemanager.com';
+
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email.value, password.value);
                 const user = userCredential.user;
                 const batch = writeBatch(db);
 
                 const publicProfile = {
-                    uid: user.uid, nickname: nickname.value, team: team.value,
-                    totalPoints: 0, rank: "Новичок", equippedTitle: null,
-                    createdAt: serverTimestamp(), isAdmin: false
+                    uid: user.uid,
+                    nickname: isAdminAccount ? 'Admin' : nickname.value,
+                    team: isAdminAccount ? 'Администрация' : team.value,
+                    totalPoints: 0,
+                    rank: isAdminAccount ? "Всемогущий" : "Новичок",
+                    equippedTitle: null,
+                    createdAt: serverTimestamp(),
+                    isAdmin: isAdminAccount
                 };
                 const privateProfile = {
                     balance: 0, zalogCount: 0, pochtaCount: 0, unlockedAchievements: []
@@ -298,7 +305,7 @@
                 batch.set(doc(db, "users_public", user.uid), publicProfile);
                 batch.set(doc(db, "users_private", user.uid), privateProfile);
                 
-                await addLogEntry(`Новый игрок в команде! **${nickname.value}** присоединился к нам.`, 'person-add-outline');
+                await addLogEntry(`Новый игрок в команде! **${publicProfile.nickname}** присоединился к нам.`, 'person-add-outline');
                 await batch.commit();
             } catch (error) {
                 showAlert(error.message);
@@ -332,7 +339,7 @@
                         
                         const unsubEvents = onSnapshot(query(collection(db, "eventLog"), orderBy("timestamp", "desc")), snap => renderEventFeed(snap.docs.map(d=>d.data())));
                         const unsubAllUsers = onSnapshot(query(collection(db, "users_public"), orderBy("totalPoints", "desc")), snap => updateRatingsUI(snap.docs.map(d=>d.data()), user.uid));
-                        const unsubShop = onSnapshot(collection(db, "shopItems"), snap => renderShopItems(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+                        const unsubShop = onSnapshot(query(collection(db, "shopItems"), orderBy("price")), snap => renderShopItems(snap.docs.map(d => ({id: d.id, ...d.data()}))));
                         const unsubGlobalChat = onSnapshot(query(collection(db, "global_chat"), orderBy("timestamp", "desc")), snap => {
                             if (currentChatType === 'global') renderChatMessages(snap.docs.map(d=>d.data()));
                         });
@@ -360,10 +367,7 @@
                         isPublicDataLoaded = true;
                         if(isAppShown) updateUI();
                         tryShowApp();
-                    } else {
-                         signOut(auth);
-                         showAlert("Ошибка: не найден публичный профиль. Возможно, он был удален.");
-                    }
+                    } else { signOut(auth); showAlert("Ошибка: не найден публичный профиль. Возможно, он был удален."); }
                 }, (error) => { console.error("Ошибка public listener:", error); signOut(auth);});
 
                 const unsubPrivate = onSnapshot(privateDocRef, (docSnap) => {
@@ -372,13 +376,15 @@
                         isPrivateDataLoaded = true;
                         if(isAppShown) updateUI();
                         tryShowApp();
-                    } else {
-                        signOut(auth);
-                        showAlert("Ошибка: не найден приватный профиль. Возможно, он был удален.");
-                    }
+                    } else { signOut(auth); showAlert("Ошибка: не найден приватный профиль. Возможно, он был удален."); }
                 }, (error) => { console.error("Ошибка private listener:", error); signOut(auth);});
 
                 unsubscribers.push(unsubPublic, unsubPrivate);
+                
+                // One-time check to populate shop
+                const shopCheck = await getDocs(collection(db, "shopItems"));
+                if(shopCheck.empty) setupInitialShopItems();
+
 
             } else {
                 showAuthScreen();
@@ -444,9 +450,10 @@
                         const achievement = ACHIEVEMENTS[key];
                         const privateRef = doc(db, "users_private", currentUser.uid);
                         const publicRef = doc(db, "users_public", currentUser.uid);
-
-                        await updateDoc(privateRef, { unlockedAchievements: arrayUnion(key) });
-                        await updateDoc(publicRef, { equippedTitle: achievement.name });
+                        
+                        const batch = writeBatch(db);
+                        batch.update(privateRef, { unlockedAchievements: arrayUnion(key) });
+                        batch.update(publicRef, { equippedTitle: achievement.name });
                         
                         addLogEntry(`**${currentUser.nickname}** получил достижение: **${achievement.name}**!`, 'star-outline');
                         showAchievementUnlockedModal(achievement);
@@ -454,137 +461,49 @@
                         if (key === 'SPRINTER') {
                             await setDoc(doc(db, 'global', 'gameState'), { sprinterAwarded: true }, { merge: true });
                         }
+                        await batch.commit();
                     }
                 }
             }
         }
-
-        function renderEventFeed(eventLog = []) {
-            dom.eventfeedlist.innerHTML = '';
-            eventLog.forEach(log => {
-                const timeAgo = formatTimeAgo(log.timestamp?.toDate());
-                const messageHTML = log.message.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-400 font-semibold">$1</strong>');
-                dom.eventfeedlist.innerHTML += `<li class="flex items-start p-3 bg-slate-700/50 rounded-lg"><ion-icon name="${log.icon}" class="text-xl text-slate-400 mr-4 mt-1"></ion-icon><div><p class="text-white">${messageHTML}</p><p class="text-xs text-slate-500 mt-1">${timeAgo}</p></div></li>`;
-            });
-        }
         
-        async function addLogEntry(message, icon) {
-            try {
-                await addDoc(collection(db, "eventLog"), { message, icon, timestamp: serverTimestamp() });
-            } catch (error) {
-                console.error("Ошибка добавления в лог:", error);
-            }
-        }
-
-        function switchChatType(type) {
-            currentChatType = type;
-            dom.chattypeglobal.classList.toggle('tab-active', type === 'global');
-            dom.chattypeteam.classList.toggle('tab-active', type === 'team');
-            dom.chatmessages.innerHTML = '<p class="text-center text-slate-400 m-auto">Загрузка сообщений...</p>';
-        }
-
-        async function handleSendMessage(e) {
-            e.preventDefault();
-            const text = dom.chatinput.value.trim();
-            if (!text || !currentUser) return;
-            dom.chatinput.value = '';
-            const message = {
-                text, senderUid: currentUser.uid, senderNickname: currentUser.nickname,
-                senderTeam: currentUser.team, timestamp: serverTimestamp()
-            };
-            try {
-                const collectionName = currentChatType === 'global' ? 'global_chat' : `team_chats/${currentUser.team}/messages`;
-                await addDoc(collection(db, collectionName), message);
-            } catch (error) {
-                console.error("Ошибка отправки сообщения: ", error);
-                showAlert("Не удалось отправить сообщение.");
-            }
-        }
-        
-        function renderChatMessages(messages = []) {
-            dom.chatmessages.innerHTML = '';
-            if (messages.length === 0) {
-                 dom.chatmessages.innerHTML = '<p class="text-center text-slate-400 m-auto">Сообщений пока нет.</p>';
-                 return;
-            }
-            messages.forEach(msg => {
-                const isOwnMessage = msg.senderUid === currentUser.uid;
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `flex flex-col mb-4 ${isOwnMessage ? 'items-end' : 'items-start'}`;
-                messageDiv.innerHTML = `<div class="text-xs text-slate-400 px-1 ${isOwnMessage ? 'text-right' : 'text-left'}">${msg.senderNickname} <span class="text-slate-500">(${msg.senderTeam})</span></div><div class="p-3 rounded-lg max-w-xs md:max-w-md ${isOwnMessage ? 'bg-indigo-600' : 'bg-slate-600'}">${msg.text}</div>`;
-                dom.chatmessages.appendChild(messageDiv);
+        async function setupInitialShopItems() {
+            const initialItems = [
+                { id: 'item1', name: "Фирменная кружка", description: "Для самого вкусного кофе.", price: 500, icon: "cafe-outline" },
+                { id: 'item2', name: "Билет в кино", description: "На любой фильм в любое время.", price: 1500, icon: "film-outline" },
+                { id: 'item3', name: "Пицца для отдела", description: "Разделите радость с коллегами.", price: 3000, icon: "pizza-outline" },
+                { id: 'item4', name: "Дополнительный выходной", description: "Заслуженный отдых.", price: 10000, icon: "sunny-outline" },
+                { id: 'item5', name: "Сертификат в ресторан", description: "На романтический ужин.", price: 7500, icon: "restaurant-outline"},
+                { id: 'item6', name: "Наушники", description: "Для работы и отдыха.", price: 12000, icon: "headset-outline"}
+            ];
+            const batch = writeBatch(db);
+            initialItems.forEach(item => {
+                batch.set(doc(db, "shopItems", item.id), item);
             });
+            await batch.commit();
+            console.log("Начальные товары добавлены в магазин.");
         }
 
+        // Остальные функции без изменений
+        function renderEventFeed(eventLog = []) { dom.eventfeedlist.innerHTML = ''; eventLog.forEach(log => { const timeAgo = formatTimeAgo(log.timestamp?.toDate()); const messageHTML = log.message.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-400 font-semibold">$1</strong>'); dom.eventfeedlist.innerHTML += `<li class="flex items-start p-3 bg-slate-700/50 rounded-lg"><ion-icon name="${log.icon}" class="text-xl text-slate-400 mr-4 mt-1"></ion-icon><div><p class="text-white">${messageHTML}</p><p class="text-xs text-slate-500 mt-1">${timeAgo}</p></div></li>`; }); }
+        async function addLogEntry(message, icon) { try { await addDoc(collection(db, "eventLog"), { message, icon, timestamp: serverTimestamp() }); } catch (error) { console.error("Ошибка добавления в лог:", error); } }
+        function switchChatType(type) { currentChatType = type; dom.chattypeglobal.classList.toggle('tab-active', type === 'global'); dom.chattypeteam.classList.toggle('tab-active', type === 'team'); dom.chatmessages.innerHTML = '<p class="text-center text-slate-400 m-auto">Загрузка сообщений...</p>'; }
+        async function handleSendMessage(e) { e.preventDefault(); const text = dom.chatinput.value.trim(); if (!text || !currentUser) return; dom.chatinput.value = ''; const message = { text, senderUid: currentUser.uid, senderNickname: currentUser.nickname, senderTeam: currentUser.team, timestamp: serverTimestamp() }; try { const collectionName = currentChatType === 'global' ? 'global_chat' : `team_chats/${currentUser.team}/messages`; await addDoc(collection(db, collectionName), message); } catch (error) { console.error("Ошибка отправки сообщения: ", error); showAlert("Не удалось отправить сообщение."); } }
+        function renderChatMessages(messages = []) { dom.chatmessages.innerHTML = ''; if (messages.length === 0) { dom.chatmessages.innerHTML = '<p class="text-center text-slate-400 m-auto">Сообщений пока нет.</p>'; return; } messages.forEach(msg => { const isOwnMessage = msg.senderUid === currentUser.uid; const messageDiv = document.createElement('div'); messageDiv.className = `flex flex-col mb-4 ${isOwnMessage ? 'items-end' : 'items-start'}`; messageDiv.innerHTML = `<div class="text-xs text-slate-400 px-1 ${isOwnMessage ? 'text-right' : 'text-left'}">${msg.senderNickname} <span class="text-slate-500">(${msg.senderTeam})</span></div><div class="p-3 rounded-lg max-w-xs md:max-w-md ${isOwnMessage ? 'bg-indigo-600' : 'bg-slate-600'}">${msg.text}</div>`; dom.chatmessages.appendChild(messageDiv); }); }
         function showLoadingScreen() { dom.loadingscreen.classList.remove('hidden'); dom.authscreen.classList.add('hidden'); dom.appcontainer.classList.add('hidden'); }
         function showAuthScreen() { dom.loadingscreen.classList.add('hidden'); dom.authscreen.classList.remove('hidden'); dom.appcontainer.classList.add('hidden'); renderAuthForm(); }
         function showAppContainer() { dom.loadingscreen.classList.add('hidden'); dom.authscreen.classList.add('hidden'); dom.appcontainer.classList.remove('hidden'); if (!document.querySelector('.tab-active')) switchTab('chat'); }
-
         dom.logoutbutton.addEventListener('click', () => signOut(auth));
-        
-        function formatTimeAgo(date) {
-             if (!date) return 'недавно';
-             const now = new Date();
-             const seconds = Math.floor((now - date) / 1000);
-             let interval = seconds / 31536000;
-             if (interval > 1) return Math.floor(interval) + " г. назад";
-             interval = seconds / 2592000;
-             if (interval > 1) return Math.floor(interval) + " мес. назад";
-             interval = seconds / 86400;
-             if (interval > 1) return Math.floor(interval) + " д. назад";
-             interval = seconds / 3600;
-             if (interval > 1) return Math.floor(interval) + " ч. назад";
-             interval = seconds / 60;
-             if (interval > 1) return Math.floor(interval) + " мин. назад";
-             return "Только что";
-        }
-        
-        function updateRatingsUI(allUsers = [], currentUserId) {
-            dom.personalratinglist.innerHTML = '';
-            allUsers.forEach((user, index) => {
-                const isCurrentUser = user.uid === currentUserId; 
-                dom.personalratinglist.innerHTML += `<li class="flex items-center justify-between p-3 rounded-lg ${isCurrentUser ? 'bg-indigo-600' : 'bg-slate-700'}"><div class="flex items-center"><span class="text-sm font-bold w-6 text-center mr-3">${index + 1}</span><div><p class="font-semibold">${user.nickname}</p><p class="text-xs text-slate-400">Команда "${user.team}"</p></div></div><span class="font-bold text-lg">${(user.totalPoints || 0).toLocaleString('ru-RU')}</span></li>`;
-            });
-            const teamScores = allUsers.reduce((acc, user) => { if(user.team) {acc[user.team] = (acc[user.team] || 0) + user.totalPoints;} return acc; }, {}); 
-            const sortedTeams = Object.entries(teamScores).map(([name, score]) => ({ name, score })).sort((a, b) => b.score - a.score); 
-            dom.teamratinglist.innerHTML = ''; 
-            sortedTeams.forEach((team, index) => { 
-                dom.teamratinglist.innerHTML += `<li class="bg-slate-700 p-4 rounded-lg flex items-center justify-between"><div class="flex items-center"><span class="text-lg font-bold w-8 text-center mr-4">${index + 1}</span><p class="font-bold text-xl">${team.name}</p></div><span class="font-bold text-2xl text-indigo-400">${team.score.toLocaleString('ru-RU')}</span></li>`;
-            }); 
-        }
-
-        function renderShopItems(shopItems = []) {
-             if (!currentUser) return;
-             dom.shopitemsgrid.innerHTML = '';
-             shopItems.sort((a,b) => a.price - b.price).forEach(item => {
-                const canAfford = currentUser.balance >= item.price;
-                const buttonClasses = canAfford ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-500 cursor-not-allowed';
-                dom.shopitemsgrid.innerHTML += `<div class="bg-slate-700/50 rounded-xl p-4 flex flex-col"><div class="w-full h-32 bg-slate-600 rounded-lg flex items-center justify-center mb-4"><ion-icon name="${item.icon || 'storefront-outline'}" class="text-5xl text-slate-400"></ion-icon></div><h3 class="font-bold text-lg text-white">${item.name}</h3><p class="text-sm text-slate-400 mb-4 flex-grow">${item.description}</p><div class="flex justify-between items-center"><span class="font-bold text-lg text-green-400">${item.price.toLocaleString()}</span><button class="buy-btn text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors ${buttonClasses}" data-item-id="${item.id}" ${!canAfford ? 'disabled' : ''}>Купить</button></div></div>`;
-             });
-             document.querySelectorAll('.buy-btn').forEach(btn => btn.addEventListener('click', (e) => {
-                 const item = shopItems.find(i => i.id === e.target.dataset.itemId);
-                 if (item) openPurchaseConfirmModal(item);
-             }));
-        }
-        
+        function formatTimeAgo(date) { if (!date) return 'недавно'; const now = new Date(); const seconds = Math.floor((now - date) / 1000); let interval = seconds / 31536000; if (interval > 1) return Math.floor(interval) + " г. назад"; interval = seconds / 2592000; if (interval > 1) return Math.floor(interval) + " мес. назад"; interval = seconds / 86400; if (interval > 1) return Math.floor(interval) + " д. назад"; interval = seconds / 3600; if (interval > 1) return Math.floor(interval) + " ч. назад"; interval = seconds / 60; if (interval > 1) return Math.floor(interval) + " мин. назад"; return "Только что"; }
+        function updateRatingsUI(allUsers = [], currentUserId) { dom.personalratinglist.innerHTML = ''; allUsers.filter(u=>!u.isAdmin).forEach((user, index) => { const isCurrentUser = user.uid === currentUserId; dom.personalratinglist.innerHTML += `<li class="flex items-center justify-between p-3 rounded-lg ${isCurrentUser ? 'bg-indigo-600' : 'bg-slate-700'}"><div class="flex items-center"><span class="text-sm font-bold w-6 text-center mr-3">${index + 1}</span><div><p class="font-semibold">${user.nickname}</p><p class="text-xs text-slate-400">Команда "${user.team}"</p></div></div><span class="font-bold text-lg">${(user.totalPoints || 0).toLocaleString('ru-RU')}</span></li>`; }); const teamScores = allUsers.filter(u=>!u.isAdmin).reduce((acc, user) => { if(user.team) {acc[user.team] = (acc[user.team] || 0) + user.totalPoints;} return acc; }, {}); const sortedTeams = Object.entries(teamScores).map(([name, score]) => ({ name, score })).sort((a, b) => b.score - a.score); dom.teamratinglist.innerHTML = ''; sortedTeams.forEach((team, index) => { dom.teamratinglist.innerHTML += `<li class="bg-slate-700 p-4 rounded-lg flex items-center justify-between"><div class="flex items-center"><span class="text-lg font-bold w-8 text-center mr-4">${index + 1}</span><p class="font-bold text-xl">${team.name}</p></div><span class="font-bold text-2xl text-indigo-400">${team.score.toLocaleString('ru-RU')}</span></li>`; }); }
+        function renderShopItems(shopItems = []) { if (!currentUser) return; dom.shopitemsgrid.innerHTML = ''; shopItems.forEach(item => { const canAfford = currentUser.balance >= item.price; const buttonClasses = canAfford ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-500 cursor-not-allowed'; dom.shopitemsgrid.innerHTML += `<div class="bg-slate-700/50 rounded-xl p-4 flex flex-col"><div class="w-full h-32 bg-slate-600 rounded-lg flex items-center justify-center mb-4"><ion-icon name="${item.icon || 'storefront-outline'}" class="text-5xl text-slate-400"></ion-icon></div><h3 class="font-bold text-lg text-white">${item.name}</h3><p class="text-sm text-slate-400 mb-4 flex-grow">${item.description}</p><div class="flex justify-between items-center"><span class="font-bold text-lg text-green-400">${item.price.toLocaleString()}</span><button class="buy-btn text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors ${buttonClasses}" data-item-id="${item.id}" ${!canAfford ? 'disabled' : ''}>Купить</button></div></div>`; }); document.querySelectorAll('.buy-btn').forEach(btn => btn.addEventListener('click', (e) => { const item = shopItems.find(i => i.id === e.target.dataset.itemId); if (item) openPurchaseConfirmModal(item); })); }
         function renderAdminPanel() { /* ... */ }
         function openPurchaseConfirmModal(item) { dom.purchaseconfirmtext.textContent = `Вы уверены, что хотите купить "${item.name}" за ${item.price.toLocaleString()} очков?`; dom.confirmpurchasebtn.onclick = () => handlePurchase(item); dom.purchaseconfirmmodal.classList.remove('hidden'); }
         function showAlert(message) { dom.alertmodaltext.textContent = message; dom.alertmodal.classList.remove('hidden'); }
         function showRankUpModal(newRank) { dom.newrankname.textContent = newRank; dom.rankupmodal.classList.remove('hidden'); }
         function showAchievementUnlockedModal(achievement) { dom.achievementname.textContent = achievement.name; dom.achievementdesc.textContent = achievement.description; dom.achievementunlockedmodal.classList.remove('hidden');}
-
-        function switchTab(tab) {
-             ['chat', 'feed', 'dashboard', 'ratings', 'shop', 'admin'].forEach(t => {
-                dom[`${t}content`]?.classList.add('hidden');
-                dom[`tab${t}`]?.classList.remove('tab-active');
-             });
-             dom[`${tab}content`]?.classList.remove('hidden');
-             dom[`tab${tab}`]?.classList.add('tab-active');
-        }
-        
-        ['chat', 'feed', 'dashboard', 'ratings', 'shop', 'admin'].forEach(tabId => {
-            if(dom[`tab${tabId}`]) dom[`tab${tabId}`].addEventListener('click', () => switchTab(tabId))
-        });
+        function switchTab(tab) { ['chat', 'feed', 'dashboard', 'ratings', 'shop', 'admin'].forEach(t => { dom[`${t}content`]?.classList.add('hidden'); dom[`tab${t}`]?.classList.remove('tab-active'); }); dom[`${tab}content`]?.classList.remove('hidden'); dom[`tab${tab}`]?.classList.add('tab-active'); }
+        ['chat', 'feed', 'dashboard', 'ratings', 'shop', 'admin'].forEach(tabId => { if(dom[`tab${tabId}`]) dom[`tab${tabId}`].addEventListener('click', () => switchTab(tabId)) });
         dom.chattypeglobal.addEventListener('click', () => switchChatType('global'));
         dom.chattypeteam.addEventListener('click', () => switchChatType('team'));
         dom.chatform.addEventListener('submit', handleSendMessage);
