@@ -208,6 +208,10 @@
             appId: "1:525819683229:web:023499db2fc65e9476cf74"
         };
         // <!-- Конец секции конфигурации -->
+
+        // <!-- ВАЖНО: Вставьте сюда UID вашего администратора -->
+        const ADMIN_UID = "OVcZXBhCZGUEfCyffumm3tPIMWs2";
+        // <!-- Конец секции UID -->
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -282,24 +286,24 @@
             e.preventDefault();
             const form = e.target;
             const { nickname, team, email, password } = form.elements;
-            const isAdminAccount = email.value.toLowerCase() === 'admin@gamemanager.com';
-
+            
             form.querySelector('button').disabled = true;
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email.value, password.value);
                 const user = userCredential.user;
+                const isAdmin = user.uid === ADMIN_UID;
                 const batch = writeBatch(db);
 
                 const publicProfile = {
                     uid: user.uid,
-                    nickname: isAdminAccount ? 'Admin' : nickname.value,
-                    team: isAdminAccount ? 'Администрация' : team.value,
+                    nickname: isAdmin ? 'Admin' : nickname.value,
+                    team: isAdmin ? 'Администрация' : team.value,
                     totalPoints: 0,
-                    rank: isAdminAccount ? "Всемогущий" : "Новичок",
+                    rank: isAdmin ? "Всемогущий" : "Новичок",
                     equippedTitle: null,
                     createdAt: serverTimestamp(),
-                    isAdmin: isAdminAccount
+                    isAdmin: isAdmin
                 };
                 const privateProfile = {
                     balance: 0, zalogCount: 0, pochtaCount: 0, unlockedAchievements: []
