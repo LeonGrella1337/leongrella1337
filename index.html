@@ -329,63 +329,60 @@
 
             if (user) {
                 showLoadingScreen();
-                let isPublicDataLoaded = false;
-                let isPrivateDataLoaded = false;
-                let isAppShown = false;
+                try {
+                    const publicDocRef = doc(db, "users_public", user.uid);
+                    const privateDocRef = doc(db, "users_private", user.uid);
 
-                const tryShowApp = () => {
-                    if (isPublicDataLoaded && isPrivateDataLoaded && !isAppShown) {
-                        isAppShown = true;
-                        
-                        const unsubEvents = onSnapshot(query(collection(db, "eventLog"), orderBy("timestamp", "desc")), snap => renderEventFeed(snap.docs.map(d=>d.data())));
-                        const unsubAllUsers = onSnapshot(query(collection(db, "users_public"), orderBy("totalPoints", "desc")), snap => updateRatingsUI(snap.docs.map(d=>d.data()), user.uid));
-                        const unsubShop = onSnapshot(query(collection(db, "shopItems"), orderBy("price")), snap => renderShopItems(snap.docs.map(d => ({id: d.id, ...d.data()}))));
-                        const unsubGlobalChat = onSnapshot(query(collection(db, "global_chat"), orderBy("timestamp", "desc")), snap => {
-                            if (currentChatType === 'global') renderChatMessages(snap.docs.map(d=>d.data()));
-                        });
-                        
-                        unsubscribers.push(unsubEvents, unsubAllUsers, unsubShop, unsubGlobalChat);
+                    const [publicSnap, privateSnap] = await Promise.all([
+                        getDoc(publicDocRef),
+                        getDoc(privateDocRef)
+                    ]);
 
-                        if (currentUser.team) {
-                             const unsubTeamChat = onSnapshot(query(collection(db, `team_chats/${currentUser.team}/messages`), orderBy("timestamp", "desc")), snap => {
-                                if (currentChatType === 'team') renderChatMessages(snap.docs.map(d=>d.data()));
-                            });
-                            unsubscribers.push(unsubTeamChat);
-                        }
-                        
-                        updateUI();
-                        showAppContainer();
+                    if (!publicSnap.exists() || !privateSnap.exists()) {
+                        showAlert("Ошибка данных профиля. Попробуйте войти снова.");
+                        signOut(auth);
+                        return;
                     }
-                };
 
-                const publicDocRef = doc(db, "users_public", user.uid);
-                const privateDocRef = doc(db, "users_private", user.uid);
+                    currentUser = { uid: user.uid, ...publicSnap.data(), ...privateSnap.data() };
+                    
+                    const unsubPublic = onSnapshot(publicDocRef, (docSnap) => {
+                        currentUser = { ...currentUser, ...docSnap.data() };
+                        updateUI();
+                    });
+                    const unsubPrivate = onSnapshot(privateDocRef, (docSnap) => {
+                        currentUser = { ...currentUser, ...docSnap.data() };
+                        updateUI();
+                    });
+                    
+                    const unsubEvents = onSnapshot(query(collection(db, "eventLog"), orderBy("timestamp", "desc")), snap => renderEventFeed(snap.docs.map(d=>d.data())));
+                    const unsubAllUsers = onSnapshot(query(collection(db, "users_public"), orderBy("totalPoints", "desc")), snap => updateRatingsUI(snap.docs.map(d=>d.data()), user.uid));
+                    const unsubShop = onSnapshot(query(collection(db, "shopItems"), orderBy("price")), snap => renderShopItems(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+                    const unsubGlobalChat = onSnapshot(query(collection(db, "global_chat"), orderBy("timestamp", "desc")), snap => {
+                        if (currentChatType === 'global') renderChatMessages(snap.docs.map(d=>d.data()));
+                    });
+                    
+                    unsubscribers.push(unsubPublic, unsubPrivate, unsubEvents, unsubAllUsers, unsubShop, unsubGlobalChat);
 
-                const unsubPublic = onSnapshot(publicDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        currentUser = { ...(currentUser || { uid: user.uid }), ...docSnap.data() };
-                        isPublicDataLoaded = true;
-                        if(isAppShown) updateUI();
-                        tryShowApp();
-                    } else { signOut(auth); showAlert("Ошибка: не найден публичный профиль. Возможно, он был удален."); }
-                }, (error) => { console.error("Ошибка public listener:", error); signOut(auth);});
+                    if (currentUser.team) {
+                         const unsubTeamChat = onSnapshot(query(collection(db, `team_chats/${currentUser.team}/messages`), orderBy("timestamp", "desc")), snap => {
+                            if (currentChatType === 'team') renderChatMessages(snap.docs.map(d=>d.data()));
+                        });
+                        unsubscribers.push(unsubTeamChat);
+                    }
+                    
+                    updateUI();
+                    showAppContainer();
+                    
+                    // One-time check to populate shop
+                    const shopCheck = await getDocs(collection(db, "shopItems"));
+                    if(shopCheck.empty) setupInitialShopItems();
 
-                const unsubPrivate = onSnapshot(privateDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        currentUser = { ...(currentUser || { uid: user.uid }), ...docSnap.data() };
-                        isPrivateDataLoaded = true;
-                        if(isAppShown) updateUI();
-                        tryShowApp();
-                    } else { signOut(auth); showAlert("Ошибка: не найден приватный профиль. Возможно, он был удален."); }
-                }, (error) => { console.error("Ошибка private listener:", error); signOut(auth);});
-
-                unsubscribers.push(unsubPublic, unsubPrivate);
-                
-                // One-time check to populate shop
-                const shopCheck = await getDocs(collection(db, "shopItems"));
-                if(shopCheck.empty) setupInitialShopItems();
-
-
+                } catch (error) {
+                    console.error("Ошибка загрузки данных: ", error);
+                    showAlert("Не удалось загрузить данные профиля.");
+                    signOut(auth);
+                }
             } else {
                 showAuthScreen();
             }
