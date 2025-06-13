@@ -3,175 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Heroes</title>
-    <!-- Подключение Tailwind CSS -->
+    <title>Game Manager</title>
+    <!-- Подключаем Tailwind CSS для стилизации -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Подключение шрифта Inter -->
+    <!-- Подключаем шрифты Google -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Иконки Ionicons -->
-    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    <!-- Иконки -->
+    <script src="https://unpkg.com/lucide-react@0.292.0/dist/lucide-react.js"></script>
+
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        /* Применяем шрифт Inter ко всему приложению */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        /* Стилизация для переключателя экранов */
+        .tab-button.active {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        /* Анимация появления */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .points-popup {
-            position: absolute; bottom: 110%; left: 50%;
-            transform: translateX(-50%); padding: 4px 12px;
-            border-radius: 9999px; font-weight: bold; color: white;
-            animation: floatUp 1.5s ease-out forwards;
-            pointer-events: none;
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
         }
-        @keyframes floatUp {
-            from { opacity: 1; transform: translate(-50%, 0); }
-            to { opacity: 0; transform: translate(-50%, -60px); }
+        /* Стили для неактивных кнопок */
+        .action-button:disabled {
+            cursor: not-allowed;
+            background-color: #e5e7eb;
+            opacity: 0.7;
+            transform: none;
         }
-        .tab-active { background-color: #4f46e5; color: white; }
-        .modal-backdrop {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 50; animation: fadeIn 0.3s ease;
+        .action-button:disabled:hover {
+            box-shadow: none;
         }
-        .modal-content {
-            animation: fadeIn 0.3s ease, slideIn 0.4s ease-out;
-        }
-        @keyframes slideIn {
-            from { transform: translateY(20px) scale(0.95); }
-            to { transform: translateY(0) scale(1); }
+        /* Стили для чата */
+        #chat-messages {
+            scroll-behavior: smooth;
         }
     </style>
 </head>
-<body class="bg-slate-900 text-white flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-100 text-gray-800">
 
-    <!-- Экраны приложения -->
-    <div id="loading-screen" class="text-center">
-        <h1 class="text-3xl font-bold text-indigo-400">Sales Heroes</h1>
-        <p class="text-slate-400 mt-2">Загрузка данных...</p>
-    </div>
+    <!-- Основной контейнер приложения -->
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-7xl">
 
-    <div id="auth-screen" class="hidden bg-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700 fade-in">
-        <!-- Форма будет меняться между входом и регистрацией -->
-    </div>
-
-    <div id="app-container" class="hidden w-full max-w-4xl mx-auto fade-in">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6">
-            <div class="flex justify-between items-start mb-6">
-                <div>
-                    <h1 id="user-nickname" class="text-3xl font-bold text-white"></h1>
-                    <div class="flex items-center mt-1">
-                        <p id="user-team" class="text-indigo-400 font-medium"></p>
-                        <p id="user-title" class="ml-4 text-amber-400 font-semibold text-sm bg-amber-400/10 px-2 py-0.5 rounded"></p>
-                    </div>
-                </div>
-                 <div class="flex items-center space-x-4">
-                    <div class="text-right">
-                         <p class="text-sm text-slate-400">Баланс</p>
-                         <p id="header-balance" class="text-lg font-bold text-green-400 flex items-center">
-                            <ion-icon name="cash-outline" class="mr-1"></ion-icon>
-                            <span></span>
-                        </p>
-                    </div>
-                    <button id="logout-button" class="bg-slate-700 hover:bg-red-600 hover:text-white text-slate-300 font-bold py-2 px-3 rounded-lg transition-colors">Выйти</button>
-                </div>
+        <!-- Экран загрузки, отображается до инициализации Firebase -->
+        <div id="loading-view" class="flex justify-center items-center h-screen">
+            <div class="text-center">
+                <svg class="animate-spin h-12 w-12 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="mt-4 text-lg font-semibold text-gray-700">Загрузка игры...</p>
             </div>
-            <div class="mb-6">
-                <div id="tabs-container" class="flex bg-slate-700 rounded-lg p-1">
-                    <button id="tab-chat" class="w-full py-2 rounded-md text-sm font-medium transition-colors">Чат</button>
-                    <button id="tab-feed" class="w-full py-2 rounded-md text-sm font-medium transition-colors">Лента</button>
-                    <button id="tab-dashboard" class="w-full py-2 rounded-md text-sm font-medium transition-colors">Панель</button>
-                    <button id="tab-ratings" class="w-full py-2 rounded-md text-sm font-medium transition-colors">Рейтинги</button>
-                    <button id="tab-shop" class="w-full py-2 rounded-md text-sm font-medium transition-colors">Магазин</button>
+        </div>
+
+        <!-- Экран авторизации/регистрации, изначально скрыт -->
+        <div id="auth-view" class="hidden max-w-md mx-auto fade-in">
+            <h1 class="text-4xl font-bold text-center text-indigo-600 mb-2">Game Manager</h1>
+            <p class="text-center text-gray-500 mb-8">Войдите или создайте аккаунт, чтобы начать</p>
+
+            <div class="bg-white p-8 rounded-xl shadow-lg">
+                <div class="flex border-b mb-6">
+                    <button id="show-login-tab" class="tab-button flex-1 py-3 text-center font-medium border-b-2 transition active">Вход</button>
+                    <button id="show-register-tab" class="tab-button flex-1 py-3 text-center font-medium border-b-2 transition">Регистрация</button>
                 </div>
-            </div>
-            <!-- Контент вкладок -->
-            <div id="chat-content" class="hidden">
-                <div class="flex justify-center mb-4">
-                     <div class="flex bg-slate-600 rounded-lg p-1">
-                        <button id="chat-type-global" class="px-4 py-1 rounded-md text-sm font-medium transition-colors">Общий</button>
-                        <button id="chat-type-team" class="px-4 py-1 rounded-md text-sm font-medium transition-colors">Командный</button>
+                
+                <!-- Форма входа -->
+                <form id="login-form">
+                    <div class="mb-4">
+                        <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="login-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" required>
                     </div>
-                </div>
-                <div id="chat-messages" class="bg-slate-900/50 p-4 rounded-lg h-80 overflow-y-auto flex flex-col-reverse"></div>
-                <form id="chat-form" class="mt-4 flex gap-4">
-                    <input type="text" id="chat-input" class="flex-grow bg-slate-700 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Введите ваше сообщение..." required>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-lg flex items-center"><ion-icon name="send-outline"></ion-icon></button>
+                    <div class="mb-6">
+                        <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+                        <input type="password" id="login-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" required>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md flex items-center justify-center">Войти</button>
                 </form>
+
+                <!-- Форма регистрации -->
+                <form id="register-form" class="hidden">
+                    <div class="mb-4">
+                        <label for="register-nickname" class="block text-sm font-medium text-gray-700 mb-1">Ник</label>
+                        <input type="text" id="register-nickname" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="register-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="register-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="register-password" class="block text-sm font-medium text-gray-700 mb-1">Пароль</p>
+                        <input type="password" id="register-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" required>
+                    </div>
+                    <div class="mb-6">
+                        <label for="team-select" class="block text-sm font-medium text-gray-700 mb-1">Команда</label>
+                        <select id="team-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            <option value="">Выберите команду...</option>
+                            <option value="new_team">Создать новую команду</option>
+                        </select>
+                        <input type="text" id="new-team-name" class="hidden w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg" placeholder="Название новой команды">
+                    </div>
+                    <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-md flex items-center justify-center">Создать аккаунт</button>
+                </form>
+
+                <p id="auth-error" class="text-red-500 text-center mt-4 text-sm"></p>
             </div>
-            <div id="feed-content" class="hidden">
-                 <h2 class="text-xl font-bold mb-4 text-center">Лента событий</h2>
-                 <ul id="event-feed-list" class="space-y-3 max-h-[450px] overflow-y-auto pr-2"></ul>
-            </div>
-            <div id="dashboard-content">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center">
-                    <div class="bg-slate-700/50 p-4 rounded-xl"><p class="text-sm text-slate-400">Ранг</p><p id="user-rank" class="text-2xl font-semibold text-white"></p></div>
-                    <div class="bg-slate-700/50 p-4 rounded-xl"><p class="text-sm text-slate-400">Баланс</p><p id="user-balance" class="text-2xl font-semibold text-green-400"></p></div>
-                    <div class="bg-slate-700/50 p-4 rounded-xl"><p class="text-sm text-slate-400">Всего очков</p><p id="user-total-points" class="text-2xl font-semibold text-white"></p></div>
+        </div>
+
+        <!-- Основной игровой экран, изначально скрыт -->
+        <div id="game-view" class="hidden fade-in">
+            <!-- Шапка -->
+            <header class="flex flex-col md:flex-row justify-between items-center mb-8 bg-white p-6 rounded-xl shadow-md">
+                <div class="text-center md:text-left mb-4 md:mb-0">
+                    <h1 class="text-3xl font-bold text-indigo-600">Панель управления</h1>
+                    <p id="user-info" class="text-gray-500 mt-1">Загрузка данных пользователя...</p>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button id="add-zalog" class="relative bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-lg transition-transform hover:scale-105">Закрыть Залог <span class="block text-sm opacity-80">+100 очков</span></button>
-                    <button id="add-pochta" class="relative bg-sky-600 hover:bg-sky-700 text-white font-bold py-4 px-4 rounded-lg text-lg transition-transform hover:scale-105">Почтовые сборы <span class="block text-sm opacity-80">+20 очков</span></button>
+                <button id="logout-button" class="bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 transition shadow">Выйти</button>
+            </header>
+            
+            <p id="game-error" class="text-red-500 text-center mb-4 text-sm font-semibold"></p>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Левая колонка: действия и чат -->
+                <div class="lg:col-span-1 flex flex-col gap-8">
+                    <!-- Секция действий -->
+                    <section>
+                        <h2 class="text-2xl font-semibold mb-4 text-gray-700">Ваши действия</h2>
+                        <div class="grid grid-cols-1 gap-6">
+                            <button id="add-zalog-points" data-points="25" class="action-button bg-white p-6 rounded-xl shadow-lg text-left hover:shadow-xl hover:-translate-y-1 transition-all duration-300" disabled>
+                                <h3 class="text-xl font-bold text-blue-600">Залог</h3>
+                                <p class="text-gray-500 mt-1">Получить +25 VP за оформленный залог.</p>
+                            </button>
+                            <button id="add-pochtovye-sbory-points" data-points="10" class="action-button bg-white p-6 rounded-xl shadow-lg text-left hover:shadow-xl hover:-translate-y-1 transition-all duration-300" disabled>
+                                <h3 class="text-xl font-bold text-green-600">Почтовые сборы</h3>
+                                <p class="text-gray-500 mt-1">Получить +10 VP за почтовые сборы.</p>
+                            </button>
+                        </div>
+                    </section>
+                    <!-- Секция чата (пока неактивна) -->
+                    <section class="bg-white p-6 rounded-xl shadow-lg flex flex-col">
+                        <h3 class="text-xl font-bold mb-4 text-center text-indigo-700">Командный чат</h3>
+                        <div id="chat-messages" class="flex-grow h-64 overflow-y-auto border-t border-b p-4 mb-4 bg-gray-50 rounded-lg">
+                           <p class="text-gray-400 text-center italic">Загрузка сообщений...</p>
+                        </div>
+                        <form id="chat-form" class="flex gap-2">
+                            <input type="text" id="chat-input" placeholder="Введите сообщение..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" disabled>
+                            <button type="submit" class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                            </button>
+                        </form>
+                    </section>
                 </div>
-            </div>
-            <div id="ratings-content" class="hidden">
-                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div><h2 class="text-xl font-bold mb-4 text-center">Личный рейтинг</h2><ul id="personal-rating-list" class="space-y-2 max-h-96 overflow-y-auto pr-2"></ul></div>
-                    <div><h2 class="text-xl font-bold mb-4 text-center">Командный рейтинг</h2><ul id="team-rating-list" class="space-y-3"></ul></div>
-                 </div>
-            </div>
-            <div id="shop-content" class="hidden">
-                <h2 class="text-xl font-bold mb-4 text-center">Магазин призов</h2>
-                <div id="shop-items-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+                <!-- Правая колонка: рейтинги -->
+                <div class="lg:col-span-2 flex flex-col gap-8">
+                     <!-- Личный рейтинг -->
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold mb-4 text-center text-indigo-700">Личный зачет</h3>
+                        <div class="overflow-y-auto max-h-96">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="border-b">
+                                        <th class="p-3">#</th>
+                                        <th class="p-3">Игрок</th>
+                                        <th class="p-3">Ранг</th>
+                                        <th class="p-3">Команда</th>
+                                        <th class="p-3 text-right">Очки (VP)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="personal-leaderboard"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Командный рейтинг -->
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                         <h3 class="text-xl font-bold mb-4 text-center text-indigo-700">Командный зачет</h3>
+                         <div class="overflow-y-auto max-h-96">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="border-b">
+                                        <th class="p-3">#</th>
+                                        <th class="p-3">Команда</th>
+                                        <th class="p-3 text-right">Очки (VP)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="team-leaderboard"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Модальные окна -->
-    <div id="rank-up-modal" class="hidden modal-backdrop">
-        <div class="modal-content bg-slate-800 border-2 border-indigo-500 rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center">
-            <h2 class="text-2xl font-bold text-amber-400 mb-2">НОВЫЙ РАНГ!</h2>
-            <p class="text-slate-300 mb-4">Вы достигли ранга:</p>
-            <p id="new-rank-name" class="text-4xl font-bold text-white bg-indigo-600 rounded-lg py-3 mb-6"></p>
-            <button id="close-rank-modal" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium rounded-lg py-2.5">Продолжить</button>
-        </div>
-    </div>
-    <div id="achievement-unlocked-modal" class="hidden modal-backdrop">
-        <div class="modal-content bg-slate-800 border-2 border-amber-500 rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center">
-            <h2 class="text-2xl font-bold text-amber-400 mb-2">ДОСТИЖЕНИЕ РАЗБЛОКИРОВАНО!</h2>
-            <p id="achievement-name" class="text-3xl font-bold text-white mb-2"></p>
-            <p id="achievement-desc" class="text-slate-300 mb-6"></p>
-            <button id="close-achievement-modal" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium rounded-lg py-2.5">Отлично!</button>
-        </div>
-    </div>
-    <div id="purchase-confirm-modal" class="hidden modal-backdrop">
-        <div class="modal-content bg-slate-800 border-slate-700 rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center">
-            <h2 class="text-xl font-bold text-white mb-2">Подтверждение покупки</h2>
-            <p id="purchase-confirm-text" class="text-slate-300 mb-6"></p>
-            <div class="flex justify-between gap-4">
-                <button id="cancel-purchase-btn" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium rounded-lg py-2.5">Отмена</button>
-                <button id="confirm-purchase-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg py-2.5">Купить</button>
+    <!-- Модальное окно для подтверждения -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center">
+            <h3 id="modal-title" class="text-xl font-bold mb-4">Подтверждение</h3>
+            <p id="modal-text" class="text-gray-600 mb-6">Вы уверены, что хотите это сделать?</p>
+            <div class="flex justify-center gap-4">
+                <button id="modal-confirm-btn" class="bg-indigo-600 text-white px-8 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">Да</button>
+                <button id="modal-cancel-btn" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">Отмена</button>
             </div>
         </div>
     </div>
-    <div id="alert-modal" class="hidden modal-backdrop">
-        <div class="modal-content bg-slate-800 border-slate-700 rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center">
-             <p id="alert-modal-text" class="text-white text-lg mb-6"></p>
-             <button id="close-alert-modal" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg py-2.5">Понятно</button>
-        </div>
-    </div>
 
-    <!-- Firebase SDK -->
+    <!-- Подключаем Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, serverTimestamp, updateDoc, increment, onSnapshot, collection, query, orderBy, addDoc, writeBatch, getDocs, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, getDocs, collection, onSnapshot, query, runTransaction, addDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // <!-- ВАЖНО: Вставьте сюда конфигурацию вашего проекта Firebase -->
+        // --- КОНФИГУРАЦИЯ FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyBqnRUwI3kJPWzHFAdHc9FIB1TAXtE5vgQ",
             authDomain: "gamemanager-52afb.firebaseapp.com",
@@ -180,352 +232,313 @@
             messagingSenderId: "525819683229",
             appId: "1:525819683229:web:023499db2fc65e9476cf74"
         };
-        // <!-- Конец секции конфигурации -->
-        
+
+        // --- ИНИЦИАЛИЗАЦИЯ FIREBASE ---
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const dom = Object.fromEntries(['loading-screen', 'auth-screen', 'app-container', 'logout-button', 'add-zalog', 'add-pochta', 'tabs-container', 'tab-chat','tab-feed', 'tab-dashboard', 'tab-ratings', 'tab-shop', 'chat-content', 'feed-content', 'dashboard-content', 'ratings-content', 'shop-content', 'rank-up-modal', 'close-rank-modal', 'new-rank-name', 'purchase-confirm-modal', 'purchase-confirm-text', 'cancel-purchase-btn', 'confirm-purchase-btn', 'alert-modal', 'alert-modal-text', 'close-alert-modal', 'user-nickname', 'user-team', 'header-balance', 'user-rank', 'user-balance', 'user-total-points', 'personal-rating-list', 'team-rating-list', 'shop-items-grid', 'user-title', 'achievement-unlocked-modal', 'achievement-name', 'achievement-desc', 'close-achievement-modal', 'event-feed-list', 'chat-type-global', 'chat-type-team', 'chat-messages', 'chat-form', 'chat-input'].map(id => [id.replace(/-/g, ''), document.getElementById(id)]));
+        // --- ПОЛУЧЕНИЕ ЭЛЕМЕНТОВ DOM ---
+        const loadingView = document.getElementById('loading-view');
+        const authView = document.getElementById('auth-view');
+        const gameView = document.getElementById('game-view');
+        
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        
+        const showLoginTab = document.getElementById('show-login-tab');
+        const showRegisterTab = document.getElementById('show-register-tab');
 
-        const RANKS = [
-            { name: "Новичок", points: 0 }, { name: "Специалист", points: 1000 }, { name: "Эксперт", points: 5000 },
-            { name: "Мастер", points: 15000 }, { name: "Легенда продаж", points: 30000 }
-        ];
+        const teamSelect = document.getElementById('team-select');
+        const newTeamNameInput = document.getElementById('new-team-name');
+        const authError = document.getElementById('auth-error');
+        const gameError = document.getElementById('game-error');
 
-        const ACHIEVEMENTS = {
-            ZALOG_KING: { name: "Король Залогов", description: "Закройте 10 залогов.", condition: (user) => user.zalogCount >= 10 },
-            POCHTA_MASTER: { name: "Мастер Сборов", description: "Закройте 50 почтовых сборов.", condition: (user) => user.pochtaCount >= 50 },
-            SHOPAHOLIC: { name: "Коллекционер", description: "Совершите 3 покупки в магазине.", condition: async (user) => {
-                const purchasesSnap = await getDocs(collection(db, `users_private/${user.uid}/purchases`));
-                return purchasesSnap.size >= 3;
-            }},
-            SPRINTER: { name: "Спринтер", description: "Первым наберите 1000 очков.", condition: async (user) => {
-                if (user.totalPoints < 1000) return false;
-                const globalDoc = await getDoc(doc(db, 'global', 'gameState'));
-                return !globalDoc.data()?.sprinterAwarded;
-            }}
-        };
+        const userInfo = document.getElementById('user-info');
+        const logoutButton = document.getElementById('logout-button');
+        
+        const actionButtons = document.querySelectorAll('.action-button');
+        
+        const personalLeaderboard = document.getElementById('personal-leaderboard');
+        const teamLeaderboard = document.getElementById('team-leaderboard');
 
-        let unsubscribers = [];
+        // Модальное окно
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+        // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
         let currentUser = null;
-        let currentChatType = 'global';
+        let unsubscribePersonalLeaderboard = null;
+        let unsubscribeTeamLeaderboard = null;
+        let unsubscribeUserDoc = null;
 
-        function renderAuthForm(isLogin = true) {
-            dom.authscreen.innerHTML = `
-                <h1 class="text-3xl font-bold text-center mb-2 text-indigo-400">${isLogin ? 'Вход' : 'Регистрация'}</h1>
-                <p class="text-center text-slate-400 mb-6">${isLogin ? 'Введите ваши данные для входа' : 'Создайте новый аккаунт'}</p>
-                <form id="auth-form" class="space-y-4">
-                    ${!isLogin ? `
-                    <div>
-                        <label for="nickname" class="block mb-2 text-sm font-medium">Никнейм</label>
-                        <input type="text" id="nickname" class="bg-slate-700 w-full p-2.5 rounded-lg" required>
-                    </div>
-                    <div>
-                        <label for="team" class="block mb-2 text-sm font-medium">Команда</label>
-                        <select id="team" class="bg-slate-700 w-full p-2.5 rounded-lg" required>
-                             <option value="" disabled selected>-- Ваша команда --</option>
-                             <option value="Альфа">Команда "Альфа"</option>
-                             <option value="Браво">Команда "Браво"</option>
-                             <option value="Чарли">Команда "Чарли"</option>
-                             <option value="Дельта">Команда "Дельта"</option>
-                        </select>
-                    </div>` : ''}
-                    <div>
-                        <label for="email" class="block mb-2 text-sm font-medium">Email</label>
-                        <input type="email" id="email" class="bg-slate-700 w-full p-2.5 rounded-lg" required>
-                    </div>
-                    <div>
-                        <label for="password" class="block mb-2 text-sm font-medium">Пароль</label>
-                        <input type="password" id="password" class="bg-slate-700 w-full p-2.5 rounded-lg" required>
-                    </div>
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 p-3 rounded-lg">${isLogin ? 'Войти' : 'Создать аккаунт'}</button>
-                </form>
-                <div class="text-center mt-4 text-sm">
-                    <button id="toggle-auth-mode" class="text-indigo-400 hover:underline">
-                        ${isLogin ? 'У меня нет аккаунта' : 'Уже есть аккаунт'}
-                    </button>
-                </div>
-            `;
-            document.getElementById('auth-form').addEventListener('submit', isLogin ? handleLogin : handleRegister);
-            document.getElementById('toggle-auth-mode').addEventListener('click', () => renderAuthForm(!isLogin));
-        }
-
-        async function handleRegister(e) {
-            e.preventDefault();
-            const form = e.target;
-            const { nickname, team, email, password } = form.elements;
-            
-            form.querySelector('button').disabled = true;
-
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email.value, password.value);
-                const user = userCredential.user;
-                const batch = writeBatch(db);
-
-                const publicProfile = {
-                    uid: user.uid, nickname: nickname.value, team: team.value,
-                    totalPoints: 0, rank: "Новичок", equippedTitle: null,
-                    createdAt: serverTimestamp(), isAdmin: false
-                };
-                const privateProfile = {
-                    balance: 0, zalogCount: 0, pochtaCount: 0, unlockedAchievements: []
-                };
-
-                batch.set(doc(db, "users_public", user.uid), publicProfile);
-                batch.set(doc(db, "users_private", user.uid), privateProfile);
-                
-                await addLogEntry(`Новый игрок в команде! **${publicProfile.nickname}** присоединился к нам.`, 'person-add-outline');
-                await batch.commit();
-            } catch (error) {
-                showAlert(error.message);
-            } finally {
-                form.querySelector('button').disabled = false;
-            }
-        }
-
-        async function handleLogin(e) {
-            e.preventDefault();
-            const form = e.target;
-            const { email, password } = form.elements;
-            form.querySelector('button').disabled = true;
-            try {
-                await signInWithEmailAndPassword(auth, email.value, password.value);
-            } catch (error) {
-                showAlert(error.message);
-            } finally {
-                 form.querySelector('button').disabled = false;
-            }
-        }
-
+        // --- УПРАВЛЕНИЕ СОСТОЯНИЕМ АВТОРИЗАЦИИ ---
         onAuthStateChanged(auth, async (user) => {
-            unsubscribers.forEach(unsub => unsub());
-            unsubscribers = [];
-            currentUser = null;
+            if (unsubscribePersonalLeaderboard) unsubscribePersonalLeaderboard();
+            if (unsubscribeTeamLeaderboard) unsubscribeTeamLeaderboard();
+            if (unsubscribeUserDoc) unsubscribeUserDoc();
+            
+            authError.textContent = '';
+            gameError.textContent = '';
 
             if (user) {
-                showLoadingScreen();
-                try {
-                    const publicDocRef = doc(db, "users_public", user.uid);
-                    const privateDocRef = doc(db, "users_private", user.uid);
-                    
-                    const publicSnap = await getDoc(publicDocRef);
-                    const privateSnap = await getDoc(privateDocRef);
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
 
-                    if (!publicSnap.exists() || !privateSnap.exists()) {
-                        await signOut(auth);
-                        showAlert("Ошибка данных профиля. Пожалуйста, выйдите и зарегистрируйтесь заново.");
-                        return;
-                    }
-
-                    currentUser = { uid: user.uid, ...publicSnap.data(), ...privateSnap.data() };
-                    
-                    const unsubPublic = onSnapshot(publicDocRef, (docSnap) => {
-                        currentUser = { ...currentUser, ...docSnap.data() };
-                        updateUI();
-                    });
-                    const unsubPrivate = onSnapshot(privateDocRef, (docSnap) => {
-                        currentUser = { ...currentUser, ...docSnap.data() };
-                        updateUI();
-                    });
-                    
-                    const unsubEvents = onSnapshot(query(collection(db, "eventLog"), orderBy("timestamp", "desc")), snap => renderEventFeed(snap.docs.map(d=>d.data())));
-                    const unsubAllUsers = onSnapshot(query(collection(db, "users_public"), orderBy("totalPoints", "desc")), snap => updateRatingsUI(snap.docs.map(d=>d.data()), user.uid));
-                    const unsubShop = onSnapshot(query(collection(db, "shopItems"), orderBy("price")), snap => renderShopItems(snap.docs.map(d => ({id: d.id, ...d.data()}))));
-                    const unsubGlobalChat = onSnapshot(query(collection(db, "global_chat"), orderBy("timestamp", "desc")), snap => {
-                        if (currentChatType === 'global') renderChatMessages(snap.docs.map(d=>d.data()));
-                    });
-                    
-                    unsubscribers.push(unsubPublic, unsubPrivate, unsubEvents, unsubAllUsers, unsubShop, unsubGlobalChat);
-
-                    if (currentUser.team) {
-                         const unsubTeamChat = onSnapshot(query(collection(db, `team_chats/${currentUser.team}/messages`), orderBy("timestamp", "desc")), snap => {
-                            if (currentChatType === 'team') renderChatMessages(snap.docs.map(d=>d.data()));
-                        });
-                        unsubscribers.push(unsubTeamChat);
-                    }
-                    
-                    updateUI();
-                    showAppContainer();
-                    
-                    const shopCheck = await getDocs(collection(db, "shopItems"));
-                    if(shopCheck.empty) setupInitialShopItems();
-
-                } catch (error) {
-                    console.error("Ошибка загрузки данных: ", error);
-                    showAlert("Не удалось загрузить данные профиля.");
-                    signOut(auth);
+                if (userDoc.exists()) {
+                    currentUser = user;
+                    gameView.style.display = 'block';
+                    authView.style.display = 'none';
+                    setupGameListeners(user.uid);
+                } else {
+                    console.error("Пользователь аутентифицирован, но профиль в Firestore отсутствует. Выход из системы.");
+                    authError.textContent = "Ваша регистрация не была завершена. Пожалуйста, зарегистрируйтесь снова.";
+                    await signOut(auth);
+                    gameView.style.display = 'none';
+                    authView.style.display = 'block';
                 }
             } else {
-                showAuthScreen();
+                currentUser = null;
+                gameView.style.display = 'none';
+                authView.style.display = 'block';
+                loadTeamsForRegistration();
+            }
+            loadingView.style.display = 'none';
+        });
+        
+        function getRank(points) {
+            if (points >= 1000) return 'Мастер';
+            if (points >= 500) return 'Эксперт';
+            if (points >= 250) return 'Профи';
+            if (points >= 100) return 'Специалист';
+            return 'Стажер';
+        }
+
+        function setupGameListeners(uid) {
+            actionButtons.forEach(btn => btn.disabled = true);
+            const userDocRef = doc(db, "users", uid);
+            unsubscribeUserDoc = onSnapshot(userDocRef, (doc) => {
+                if (doc.exists()) {
+                    const userData = doc.data();
+                    userInfo.innerHTML = `
+                        <span class="font-semibold">${userData.nickname}</span> |
+                        Команда: <span class="font-semibold">${userData.teamName}</span> | 
+                        Ранг: <span class="font-semibold text-indigo-600">${userData.rank}</span> | 
+                        Очки: <span class="font-semibold text-green-600">${userData.points} VP</span>
+                    `;
+                    actionButtons.forEach(btn => btn.disabled = false);
+                    gameError.textContent = '';
+                } else {
+                    userInfo.textContent = "Не удалось загрузить данные профиля.";
+                }
+            }, (error) => {
+                console.error("Ошибка при загрузке профиля: ", error);
+                gameError.textContent = "Ошибка загрузки профиля. Проверьте права доступа в Firestore.";
+            });
+            
+            const personalQuery = query(collection(db, "users"));
+            unsubscribePersonalLeaderboard = onSnapshot(personalQuery, (querySnapshot) => {
+                const users = [];
+                querySnapshot.forEach((doc) => {
+                    users.push({ id: doc.id, ...doc.data() });
+                });
+                users.sort((a, b) => b.points - a.points);
+                renderPersonalLeaderboard(users);
+            }, (error) => {
+                console.error("Ошибка загрузки личного рейтинга: ", error);
+                gameError.textContent = "Ошибка загрузки рейтинга. Проверьте права доступа в Firestore.";
+            });
+
+            const teamQuery = query(collection(db, "teams"));
+            unsubscribeTeamLeaderboard = onSnapshot(teamQuery, (querySnapshot) => {
+                const teams = [];
+                querySnapshot.forEach((doc) => {
+                    teams.push({ id: doc.id, ...doc.data() });
+                });
+                teams.sort((a, b) => b.totalPoints - a.totalPoints);
+                renderTeamLeaderboard(teams);
+            }, (error) => {
+                console.error("Ошибка загрузки командного рейтинга: ", error);
+                gameError.textContent = "Ошибка загрузки рейтинга команд. Проверьте права доступа в Firestore.";
+            });
+        }
+        
+        function renderPersonalLeaderboard(users) {
+            personalLeaderboard.innerHTML = '';
+            users.forEach((user, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b last:border-b-0 hover:bg-gray-50 transition';
+                if (currentUser && user.uid === currentUser.uid) {
+                    row.classList.add('bg-indigo-50', 'font-semibold');
+                }
+                row.innerHTML = `
+                    <td class="p-3">${index + 1}</td>
+                    <td class="p-3">${user.nickname}</td>
+                    <td class="p-3">${user.rank}</td>
+                    <td class="p-3">${user.teamName || 'N/A'}</td>
+                    <td class="p-3 text-right">${user.points || 0}</td>
+                `;
+                personalLeaderboard.appendChild(row);
+            });
+        }
+
+        function renderTeamLeaderboard(teams) {
+            teamLeaderboard.innerHTML = '';
+            teams.forEach((team, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b last:border-b-0 hover:bg-gray-50 transition';
+                row.innerHTML = `
+                    <td class="p-3">${index + 1}</td>
+                    <td class="p-3">${team.name}</td>
+                    <td class="p-3 text-right">${team.totalPoints || 0}</td>
+                `;
+                teamLeaderboard.appendChild(row);
+            });
+        }
+
+        async function loadTeamsForRegistration() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "teams"));
+                while(teamSelect.options.length > 2) {
+                    teamSelect.remove(2);
+                }
+                querySnapshot.forEach((doc) => {
+                    const option = document.createElement('option');
+                    option.value = doc.id;
+                    option.textContent = doc.data().name;
+                    teamSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error("Ошибка загрузки команд: ", error.message);
+                authError.textContent = "Не удалось загрузить список команд. Проверьте правила безопасности Firestore.";
+            }
+        }
+
+
+        // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authError.textContent = '';
+            const submitButton = e.currentTarget.querySelector('button');
+            const originalButtonHTML = submitButton.innerHTML;
+
+            submitButton.disabled = true;
+            submitButton.innerHTML = `<svg class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Вход...`;
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                authError.textContent = "Неверный email или пароль.";
+            } finally {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonHTML;
             }
         });
 
-        function updateUI() {
-            if (!currentUser?.nickname) return;
-            checkAllAchievements();
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authError.textContent = '';
+            const nickname = document.getElementById('register-nickname').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            let teamId = teamSelect.value;
+            const newTeam = newTeamNameInput.value.trim();
             
-            const { nickname, team, equippedTitle, rank, totalPoints, balance, isAdmin } = currentUser;
-            const balanceFormatted = (balance || 0).toLocaleString('ru-RU');
+            const submitButton = e.currentTarget.querySelector('button');
+            const originalButtonHTML = submitButton.innerHTML;
 
-            dom.tabadmin.classList.toggle('hidden', !isAdmin);
-            dom.usernickname.textContent = nickname;
-            dom.userteam.textContent = `Команда "${team}"`;
-            dom.usertitle.textContent = equippedTitle || '';
-            dom.usertitle.classList.toggle('hidden', !equippedTitle);
-            dom.headerbalance.querySelector('span').textContent = balanceFormatted;
-            dom.userrank.textContent = rank;
-            dom.userbalance.textContent = balanceFormatted;
-            dom.usertotalpoints.textContent = (totalPoints || 0).toLocaleString('ru-RU');
-        }
-
-        async function addPoints(points, counterField) {
-            if (!auth.currentUser || !currentUser || currentUser.isAdmin) return;
-            const publicRef = doc(db, "users_public", auth.currentUser.uid);
-            const privateRef = doc(db, "users_private", auth.currentUser.uid);
+            if (teamId === '') { authError.textContent = 'Пожалуйста, выберите команду.'; return; }
+            if (teamId === 'new_team' && !newTeam) { authError.textContent = 'Пожалуйста, введите название новой команды.'; return; }
             
-            const batch = writeBatch(db);
-            batch.update(publicRef, { totalPoints: increment(points) });
-            batch.update(privateRef, { balance: increment(points), [counterField]: increment(1) });
-            
-            const logMessage = points === 100 
-                ? `**${currentUser.nickname}** закрыл **Залог** (+100 очков).`
-                : `**${currentUser.nickname}** обработал **Почтовые сборы** (+20 очков).`;
-            const logIcon = points === 100 ? 'shield-checkmark-outline' : 'mail-outline';
-            addLogEntry(logMessage, logIcon);
-            
-            await batch.commit();
-        }
+            submitButton.disabled = true;
+            submitButton.innerHTML = `<svg class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Регистрация...`;
 
-        async function handlePurchase(item) {
-            if (!auth.currentUser || !currentUser || currentUser.balance < item.price) return showAlert("Недостаточно средств!");
-            dom.purchaseconfirmmodal.classList.add('hidden');
+            try {
+                let finalTeamId = teamId;
+                let finalTeamName = teamSelect.options[teamSelect.selectedIndex].text;
 
-            const privateRef = doc(db, "users_private", auth.currentUser.uid);
-            const batch = writeBatch(db);
-            batch.update(privateRef, { balance: increment(-item.price) });
-            batch.set(doc(collection(privateRef, 'purchases')), {
-                itemId: item.id, itemName: item.name, price: item.price, purchasedAt: serverTimestamp()
-            });
-            
-            await addLogEntry(`**${currentUser.nickname}** купил **${item.name}** в магазине.`, 'bag-handle-outline');
-            await batch.commit();
-        }
-        
-        async function checkAllAchievements() {
-            if (!currentUser || currentUser.isAdmin) return;
-            for (const key in ACHIEVEMENTS) {
-                if (!currentUser.unlockedAchievements?.includes(key)) {
-                    if (await ACHIEVEMENTS[key].condition(currentUser)) {
-                        const achievement = ACHIEVEMENTS[key];
-                        const privateRef = doc(db, "users_private", currentUser.uid);
-                        const publicRef = doc(db, "users_public", currentUser.uid);
-                        
-                        const batch = writeBatch(db);
-                        batch.update(privateRef, { unlockedAchievements: arrayUnion(key) });
-                        batch.update(publicRef, { equippedTitle: achievement.name });
-                        
-                        addLogEntry(`**${currentUser.nickname}** получил достижение: **${achievement.name}**!`, 'star-outline');
-                        showAchievementUnlockedModal(achievement);
-
-                        if (key === 'SPRINTER') {
-                            await setDoc(doc(db, 'global', 'gameState'), { sprinterAwarded: true }, { merge: true });
-                        }
-                        await batch.commit();
-                    }
+                if (teamId === 'new_team') {
+                    const q = query(collection(db, "teams"), where("name", "==", newTeam));
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) throw new Error("Команда с таким названием уже существует.");
+                    const newTeamDoc = await addDoc(collection(db, "teams"), { name: newTeam, totalPoints: 0 });
+                    finalTeamId = newTeamDoc.id;
+                    finalTeamName = newTeam;
                 }
+                
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                await setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid,
+                    nickname: nickname,
+                    email: email,
+                    teamId: finalTeamId,
+                    teamName: finalTeamName,
+                    points: 0,
+                    rank: 'Стажер'
+                });
+
+            } catch (error) {
+                 authError.textContent = error.message.includes("already-in-use") ? "Этот email уже зарегистрирован." : error.message || "Произошла ошибка при регистрации.";
+            } finally {
+                 submitButton.disabled = false;
+                 submitButton.innerHTML = originalButtonHTML;
             }
+        });
+
+        logoutButton.addEventListener('click', () => signOut(auth));
+
+        function addPointsHandler(e) {
+            const button = e.currentTarget;
+            const pointsToAdd = parseInt(button.dataset.points, 10);
+            const actionName = button.querySelector('h3').textContent;
+
+            document.getElementById('modal-title').textContent = `Подтвердить "${actionName}"`;
+            document.getElementById('modal-text').textContent = `Вы уверены, что хотите добавить ${pointsToAdd} VP?`;
+            confirmationModal.style.display = 'flex';
+
+            const confirmAction = async () => {
+                confirmationModal.style.display = 'none';
+                if (!currentUser) return;
+
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const userDocRef = doc(db, "users", currentUser.uid);
+                        const userDoc = await transaction.get(userDocRef);
+                        
+                        if (!userDoc.exists()) throw new Error("Документ пользователя не найден!");
+                        
+                        const userData = userDoc.data();
+                        const teamDocRef = doc(db, "teams", userData.teamId);
+                        
+                        const newPoints = userData.points + pointsToAdd;
+                        const newRank = getRank(newPoints);
+                        
+                        transaction.update(userDocRef, { points: newPoints, rank: newRank });
+                        
+                        const teamDoc = await transaction.get(teamDocRef);
+                        if (teamDoc.exists()) {
+                            const newTeamPoints = teamDoc.data().totalPoints + pointsToAdd;
+                            transaction.update(teamDocRef, { totalPoints: newTeamPoints });
+                        }
+                    });
+                } catch (error) {
+                    gameError.textContent = error.message;
+                }
+            };
+
+            const cancelAction = () => { confirmationModal.style.display = 'none'; };
+
+            modalConfirmBtn.addEventListener('click', confirmAction, { once: true });
+            modalCancelBtn.addEventListener('click', cancelAction, { once: true });
         }
         
-        async function setupInitialShopItems() {
-            const initialItems = [
-                { id: 'item1', name: "Фирменная кружка", description: "Для самого вкусного кофе.", price: 500, icon: "cafe-outline" },
-                { id: 'item2', name: "Билет в кино", description: "На любой фильм в любое время.", price: 1500, icon: "film-outline" },
-                { id: 'item3', name: "Пицца для отдела", description: "Разделите радость с коллегами.", price: 3000, icon: "pizza-outline" },
-                { id: 'item4', name: "Дополнительный выходной", description: "Заслуженный отдых.", price: 10000, icon: "sunny-outline" },
-                { id: 'item5', name: "Сертификат в ресторан", description: "На романтический ужин.", price: 7500, icon: "restaurant-outline"},
-                { id: 'item6', name: "Наушники", description: "Для работы и отдыха.", price: 12000, icon: "headset-outline"}
-            ];
-            const batch = writeBatch(db);
-            initialItems.forEach(item => {
-                batch.set(doc(db, "shopItems", item.id), item);
-            });
-            await batch.commit();
-            console.log("Начальные товары добавлены в магазин.");
-        }
-
-        function renderEventFeed(eventLog = []) { dom.eventfeedlist.innerHTML = ''; eventLog.forEach(log => { const timeAgo = formatTimeAgo(log.timestamp?.toDate()); const messageHTML = log.message.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-400 font-semibold">$1</strong>'); dom.eventfeedlist.innerHTML += `<li class="flex items-start p-3 bg-slate-700/50 rounded-lg"><ion-icon name="${log.icon}" class="text-xl text-slate-400 mr-4 mt-1"></ion-icon><div><p class="text-white">${messageHTML}</p><p class="text-xs text-slate-500 mt-1">${timeAgo}</p></div></li>`; }); }
-        async function addLogEntry(message, icon) { try { await addDoc(collection(db, "eventLog"), { message, icon, timestamp: serverTimestamp() }); } catch (error) { console.error("Ошибка добавления в лог:", error); } }
-        function switchChatType(type) { currentChatType = type; dom.chattypeglobal.classList.toggle('tab-active', type === 'global'); dom.chattypeteam.classList.toggle('tab-active', type === 'team'); dom.chatmessages.innerHTML = '<p class="text-center text-slate-400 m-auto">Загрузка сообщений...</p>'; }
-        async function handleSendMessage(e) { e.preventDefault(); const text = dom.chatinput.value.trim(); if (!text || !currentUser) return; dom.chatinput.value = ''; const message = { text, senderUid: currentUser.uid, senderNickname: currentUser.nickname, senderTeam: currentUser.team, timestamp: serverTimestamp() }; try { const collectionName = currentChatType === 'global' ? 'global_chat' : `team_chats/${currentUser.team}/messages`; await addDoc(collection(db, collectionName), message); } catch (error) { console.error("Ошибка отправки сообщения: ", error); showAlert("Не удалось отправить сообщение."); } }
-        function renderChatMessages(messages = []) { dom.chatmessages.innerHTML = ''; if (messages.length === 0) { dom.chatmessages.innerHTML = '<p class="text-center text-slate-400 m-auto">Сообщений пока нет.</p>'; return; } messages.forEach(msg => { const isOwnMessage = msg.senderUid === currentUser.uid; const messageDiv = document.createElement('div'); messageDiv.className = `flex flex-col mb-4 ${isOwnMessage ? 'items-end' : 'items-start'}`; messageDiv.innerHTML = `<div class="text-xs text-slate-400 px-1 ${isOwnMessage ? 'text-right' : 'text-left'}">${msg.senderNickname} <span class="text-slate-500">(${msg.senderTeam})</span></div><div class="p-3 rounded-lg max-w-xs md:max-w-md ${isOwnMessage ? 'bg-indigo-600' : 'bg-slate-600'}">${msg.text}</div>`; dom.chatmessages.appendChild(messageDiv); }); }
-        function showLoadingScreen() { dom.loadingscreen.classList.remove('hidden'); dom.authscreen.classList.add('hidden'); dom.appcontainer.classList.add('hidden'); }
-        function showAuthScreen() { dom.loadingscreen.classList.add('hidden'); dom.authscreen.classList.remove('hidden'); dom.appcontainer.classList.add('hidden'); renderAuthForm(); }
-        function showAppContainer() { dom.loadingscreen.classList.add('hidden'); dom.authscreen.classList.add('hidden'); dom.appcontainer.classList.remove('hidden'); if (!document.querySelector('.tab-active')) switchTab('chat'); }
-        dom.logoutbutton.addEventListener('click', () => signOut(auth));
-        function formatTimeAgo(date) { if (!date) return 'недавно'; const now = new Date(); const seconds = Math.floor((now - date) / 1000); let interval = seconds / 31536000; if (interval > 1) return Math.floor(interval) + " г. назад"; interval = seconds / 2592000; if (interval > 1) return Math.floor(interval) + " мес. назад"; interval = seconds / 86400; if (interval > 1) return Math.floor(interval) + " д. назад"; interval = seconds / 3600; if (interval > 1) return Math.floor(interval) + " ч. назад"; interval = seconds / 60; if (interval > 1) return Math.floor(interval) + " мин. назад"; return "Только что"; }
-        function updateRatingsUI(allUsers = [], currentUserId) { dom.personalratinglist.innerHTML = ''; allUsers.filter(u=>!u.isAdmin).forEach((user, index) => { const isCurrentUser = user.uid === currentUserId; dom.personalratinglist.innerHTML += `<li class="flex items-center justify-between p-3 rounded-lg ${isCurrentUser ? 'bg-indigo-600' : 'bg-slate-700'}"><div class="flex items-center"><span class="text-sm font-bold w-6 text-center mr-3">${index + 1}</span><div><p class="font-semibold">${user.nickname}</p><p class="text-xs text-slate-400">Команда "${user.team}"</p></div></div><span class="font-bold text-lg">${(user.totalPoints || 0).toLocaleString('ru-RU')}</span></li>`; }); const teamScores = allUsers.filter(u=>!u.isAdmin).reduce((acc, user) => { if(user.team) {acc[user.team] = (acc[user.team] || 0) + user.totalPoints;} return acc; }, {}); const sortedTeams = Object.entries(teamScores).map(([name, score]) => ({ name, score })).sort((a, b) => b.score - a.score); dom.teamratinglist.innerHTML = ''; sortedTeams.forEach((team, index) => { dom.teamratinglist.innerHTML += `<li class="bg-slate-700 p-4 rounded-lg flex items-center justify-between"><div class="flex items-center"><span class="text-lg font-bold w-8 text-center mr-4">${index + 1}</span><p class="font-bold text-xl">${team.name}</p></div><span class="font-bold text-2xl text-indigo-400">${team.score.toLocaleString('ru-RU')}</span></li>`; }); }
-        function renderShopItems(shopItems = []) { if (!currentUser) return; dom.shopitemsgrid.innerHTML = ''; shopItems.forEach(item => { const canAfford = currentUser.balance >= item.price; const buttonClasses = canAfford ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-500 cursor-not-allowed'; dom.shopitemsgrid.innerHTML += `<div class="bg-slate-700/50 rounded-xl p-4 flex flex-col"><div class="w-full h-32 bg-slate-600 rounded-lg flex items-center justify-center mb-4"><ion-icon name="${item.icon || 'storefront-outline'}" class="text-5xl text-slate-400"></ion-icon></div><h3 class="font-bold text-lg text-white">${item.name}</h3><p class="text-sm text-slate-400 mb-4 flex-grow">${item.description}</p><div class="flex justify-between items-center"><span class="font-bold text-lg text-green-400">${item.price.toLocaleString()}</span><button class="buy-btn text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors ${buttonClasses}" data-item-id="${item.id}" ${!canAfford ? 'disabled' : ''}>Купить</button></div></div>`; }); document.querySelectorAll('.buy-btn').forEach(btn => btn.addEventListener('click', (e) => { const item = shopItems.find(i => i.id === e.target.dataset.itemId); if (item) openPurchaseConfirmModal(item); })); }
-        function renderAdminPanel() { /* ... */ }
-        function openPurchaseConfirmModal(item) { dom.purchaseconfirmtext.textContent = `Вы уверены, что хотите купить "${item.name}" за ${item.price.toLocaleString()} очков?`; dom.confirmpurchasebtn.onclick = () => handlePurchase(item); dom.purchaseconfirmmodal.classList.remove('hidden'); }
-        function showAlert(message) { dom.alertmodaltext.textContent = message; dom.alertmodal.classList.remove('hidden'); }
-        function showRankUpModal(newRank) { dom.newrankname.textContent = newRank; dom.rankupmodal.classList.remove('hidden'); }
-        function showAchievementUnlockedModal(achievement) { dom.achievementname.textContent = achievement.name; dom.achievementdesc.textContent = achievement.description; dom.achievementunlockedmodal.classList.remove('hidden');}
-        function switchTab(tab) { ['chat', 'feed', 'dashboard', 'ratings', 'shop', 'admin'].forEach(t => { dom[`${t}content`]?.classList.add('hidden'); dom[`tab${t}`]?.classList.remove('tab-active'); }); dom[`${tab}content`]?.classList.remove('hidden'); dom[`tab${tab}`]?.classList.add('tab-active'); }
-        ['chat', 'feed', 'dashboard', 'ratings', 'shop', 'admin'].forEach(tabId => { if(dom[`tab${tabId}`]) dom[`tab${tabId}`].addEventListener('click', () => switchTab(tabId)) });
-        dom.chattypeglobal.addEventListener('click', () => switchChatType('global'));
-        dom.chattypeteam.addEventListener('click', () => switchChatType('team'));
-        dom.chatform.addEventListener('submit', handleSendMessage);
-        dom.addzalog.addEventListener('click', () => addPoints(100, 'zalogCount'));
-        dom.addpochta.addEventListener('click', () => addPoints(20, 'pochtaCount'));
-        dom.closerankmodal.addEventListener('click', () => dom.rankupmodal.classList.add('hidden'));
-        dom.closeachievementmodal.addEventListener('click', () => dom.achievementunlockedmodal.classList.add('hidden'));
-        dom.cancelpurchasebtn.addEventListener('click', () => dom.purchaseconfirmmodal.classList.add('hidden'));
-        dom.closealertmodal.addEventListener('click', () => dom.alertmodal.classList.add('hidden'));
+        actionButtons.forEach(btn => btn.addEventListener('click', addPointsHandler));
 
     </script>
-    <!-- 
-        ВАЖНО: ОБНОВИТЕ ПРАВИЛА FIREBASE
-        Скопируйте и вставьте этот код во вкладку "Правила" (Rules) вашей Firestore Database.
-    
-        rules_version = '2';
-        service cloud.firestore {
-          match /databases/{database}/documents {
-
-            match /users_public/{userId} {
-              allow read;
-              allow write: if request.auth.uid == userId;
-            }
-
-            match /users_private/{userId}/{document=**} {
-              allow read, write: if request.auth.uid == userId;
-            }
-
-            match /shopItems/{itemId} {
-              allow read;
-              allow write: if get(/databases/$(database)/documents/users_public/$(request.auth.uid)).data.isAdmin == true;
-            }
-
-            match /eventLog/{logId} {
-                allow read: if request.auth != null;
-                allow create: if request.auth != null;
-            }
-            
-            match /global_chat/{messageId} {
-              allow read: if request.auth != null;
-              allow create: if request.auth != null && request.resource.data.senderUid == request.auth.uid;
-            }
-
-            match /team_chats/{teamName}/messages/{messageId} {
-              allow read, create: if request.auth != null && get(/databases/$(database)/documents/users_public/$(request.auth.uid)).data.team == teamName;
-            }
-
-            match /global/{state} {
-                allow read;
-                allow write: if get(/databases/$(database)/documents/users_public/$(request.auth.uid)).data.isAdmin == true;
-            }
-          }
-        }
-    -->
 </body>
 </html>
