@@ -44,10 +44,6 @@
         .action-button:disabled:hover {
             box-shadow: none;
         }
-        /* Стили для чата */
-        #chat-messages {
-            scroll-behavior: smooth;
-        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -87,7 +83,7 @@
                         <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
                         <input type="password" id="login-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" required>
                     </div>
-                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md flex items-center justify-center">Войти</button>
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md">Войти</button>
                 </form>
 
                 <!-- Форма регистрации -->
@@ -112,7 +108,7 @@
                         </select>
                         <input type="text" id="new-team-name" class="hidden w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg" placeholder="Название новой команды">
                     </div>
-                    <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-md flex items-center justify-center">Создать аккаунт</button>
+                    <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-md">Создать аккаунт</button>
                 </form>
 
                 <p id="auth-error" class="text-red-500 text-center mt-4 text-sm"></p>
@@ -131,42 +127,27 @@
             </header>
             
             <p id="game-error" class="text-red-500 text-center mb-4 text-sm font-semibold"></p>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Левая колонка: действия и чат -->
-                <div class="lg:col-span-1 flex flex-col gap-8">
-                    <!-- Секция действий -->
-                    <section>
-                        <h2 class="text-2xl font-semibold mb-4 text-gray-700">Ваши действия</h2>
-                        <div class="grid grid-cols-1 gap-6">
-                            <button id="add-zalog-points" data-points="25" class="action-button bg-white p-6 rounded-xl shadow-lg text-left hover:shadow-xl hover:-translate-y-1 transition-all duration-300" disabled>
-                                <h3 class="text-xl font-bold text-blue-600">Залог</h3>
-                                <p class="text-gray-500 mt-1">Получить +25 VP за оформленный залог.</p>
-                            </button>
-                            <button id="add-pochtovye-sbory-points" data-points="10" class="action-button bg-white p-6 rounded-xl shadow-lg text-left hover:shadow-xl hover:-translate-y-1 transition-all duration-300" disabled>
-                                <h3 class="text-xl font-bold text-green-600">Почтовые сборы</h3>
-                                <p class="text-gray-500 mt-1">Получить +10 VP за почтовые сборы.</p>
-                            </button>
-                        </div>
-                    </section>
-                    <!-- Секция чата (пока неактивна) -->
-                    <section class="bg-white p-6 rounded-xl shadow-lg flex flex-col">
-                        <h3 class="text-xl font-bold mb-4 text-center text-indigo-700">Командный чат</h3>
-                        <div id="chat-messages" class="flex-grow h-64 overflow-y-auto border-t border-b p-4 mb-4 bg-gray-50 rounded-lg">
-                           <p class="text-gray-400 text-center italic">Загрузка сообщений...</p>
-                        </div>
-                        <form id="chat-form" class="flex gap-2">
-                            <input type="text" id="chat-input" placeholder="Введите сообщение..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" disabled>
-                            <button type="submit" class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition" disabled>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-                            </button>
-                        </form>
-                    </section>
-                </div>
 
-                <!-- Правая колонка: рейтинги -->
-                <div class="lg:col-span-2 flex flex-col gap-8">
-                     <!-- Личный рейтинг -->
+            <!-- Секция действий -->
+            <section class="mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">Ваши действия</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <button id="add-zalog-points" data-points="25" class="action-button bg-white p-6 rounded-xl shadow-lg text-left hover:shadow-xl hover:-translate-y-1 transition-all duration-300" disabled>
+                        <h3 class="text-xl font-bold text-blue-600">Залог</h3>
+                        <p class="text-gray-500 mt-1">Получить +25 VP за оформленный залог.</p>
+                    </button>
+                    <button id="add-pochtovye-sbory-points" data-points="10" class="action-button bg-white p-6 rounded-xl shadow-lg text-left hover:shadow-xl hover:-translate-y-1 transition-all duration-300" disabled>
+                        <h3 class="text-xl font-bold text-green-600">Почтовые сборы</h3>
+                        <p class="text-gray-500 mt-1">Получить +10 VP за почтовые сборы.</p>
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Секция рейтингов -->
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">Рейтинги</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Личный рейтинг -->
                     <div class="bg-white p-6 rounded-xl shadow-lg">
                         <h3 class="text-xl font-bold mb-4 text-center text-indigo-700">Личный зачет</h3>
                         <div class="overflow-y-auto max-h-96">
@@ -175,12 +156,13 @@
                                     <tr class="border-b">
                                         <th class="p-3">#</th>
                                         <th class="p-3">Игрок</th>
-                                        <th class="p-3">Ранг</th>
                                         <th class="p-3">Команда</th>
                                         <th class="p-3 text-right">Очки (VP)</th>
                                     </tr>
                                 </thead>
-                                <tbody id="personal-leaderboard"></tbody>
+                                <tbody id="personal-leaderboard">
+                                    <!-- Данные будут вставлены с помощью JS -->
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -196,12 +178,14 @@
                                         <th class="p-3 text-right">Очки (VP)</th>
                                     </tr>
                                 </thead>
-                                <tbody id="team-leaderboard"></tbody>
+                                <tbody id="team-leaderboard">
+                                   <!-- Данные будут вставлены с помощью JS -->
+                                </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 
@@ -217,11 +201,55 @@
         </div>
     </div>
 
+
     <!-- Подключаем Firebase SDK -->
     <script type="module">
+        // Импортируем необходимые функции из Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, getDocs, collection, onSnapshot, query, runTransaction, addDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { 
+            getAuth, 
+            onAuthStateChanged,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc,
+            getDocs,
+            collection,
+            onSnapshot,
+            query,
+            runTransaction,
+            addDoc,
+            where
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- ВАЖНО: ПРАВИЛА БЕЗОПАСНОСТИ FIRESTORE ---
+        // Ошибки "Missing or insufficient permissions" означают, что ваши правила безопасности в консоли Firebase
+        // не разрешают текущие операции.
+        // 
+        // 1. Для РЕГИСТРАЦИИ (чтобы загружать список команд):
+        //    rules_version = '2';
+        //    service cloud.firestore {
+        //      match /databases/{database}/documents {
+        //        match /teams/{teamId} {
+        //          allow read: if true; // Разрешает всем читать список команд
+        //        }
+        //      }
+        //    }
+        //
+        // 2. Для РЕЙТИНГОВ (чтобы все авторизованные пользователи видели всех):
+        //    match /users/{userId} {
+        //      allow read: if request.auth != null; // Разрешает авторизованным читать
+        //      allow write: if request.auth.uid == userId; // Разрешает писать только в свой профиль
+        //    }
+        //    match /teams/{teamId} {
+        //       allow read: if request.auth != null;
+        //       allow write: if request.auth != null; // Разрешает создавать и обновлять команды
+        //    }
 
         // --- КОНФИГУРАЦИЯ FIREBASE ---
         const firebaseConfig = {
@@ -264,8 +292,36 @@
 
         // Модальное окно
         const confirmationModal = document.getElementById('confirmation-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalText = document.getElementById('modal-text');
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+
+        // --- ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК АВТОРИЗАЦИИ ---
+        showLoginTab.addEventListener('click', () => {
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+            showLoginTab.classList.add('active');
+            showRegisterTab.classList.remove('active');
+        });
+
+        showRegisterTab.addEventListener('click', () => {
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+            showRegisterTab.classList.add('active');
+            showLoginTab.classList.remove('active');
+        });
+        
+        teamSelect.addEventListener('change', () => {
+            if (teamSelect.value === 'new_team') {
+                newTeamNameInput.style.display = 'block';
+                newTeamNameInput.required = true;
+            } else {
+                newTeamNameInput.style.display = 'none';
+                newTeamNameInput.required = false;
+            }
+        });
 
         // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
         let currentUser = null;
@@ -274,7 +330,7 @@
         let unsubscribeUserDoc = null;
 
         // --- УПРАВЛЕНИЕ СОСТОЯНИЕМ АВТОРИЗАЦИИ ---
-        onAuthStateChanged(auth, async (user) => {
+        onAuthStateChanged(auth, user => {
             if (unsubscribePersonalLeaderboard) unsubscribePersonalLeaderboard();
             if (unsubscribeTeamLeaderboard) unsubscribeTeamLeaderboard();
             if (unsubscribeUserDoc) unsubscribeUserDoc();
@@ -283,21 +339,10 @@
             gameError.textContent = '';
 
             if (user) {
-                const userDocRef = doc(db, "users", user.uid);
-                const userDoc = await getDoc(userDocRef);
-
-                if (userDoc.exists()) {
-                    currentUser = user;
-                    gameView.style.display = 'block';
-                    authView.style.display = 'none';
-                    setupGameListeners(user.uid);
-                } else {
-                    console.error("Пользователь аутентифицирован, но профиль в Firestore отсутствует. Выход из системы.");
-                    authError.textContent = "Ваша регистрация не была завершена. Пожалуйста, зарегистрируйтесь снова.";
-                    await signOut(auth);
-                    gameView.style.display = 'none';
-                    authView.style.display = 'block';
-                }
+                currentUser = user;
+                gameView.style.display = 'block';
+                authView.style.display = 'none';
+                setupGameListeners(user.uid);
             } else {
                 currentUser = null;
                 gameView.style.display = 'none';
@@ -306,17 +351,13 @@
             }
             loadingView.style.display = 'none';
         });
-        
-        function getRank(points) {
-            if (points >= 1000) return 'Мастер';
-            if (points >= 500) return 'Эксперт';
-            if (points >= 250) return 'Профи';
-            if (points >= 100) return 'Специалист';
-            return 'Стажер';
-        }
 
+        // --- ЛОГИКА ИГРЫ ---
+        
         function setupGameListeners(uid) {
+            // Сначала деактивируем кнопки, пока данные не загрузятся
             actionButtons.forEach(btn => btn.disabled = true);
+
             const userDocRef = doc(db, "users", uid);
             unsubscribeUserDoc = onSnapshot(userDocRef, (doc) => {
                 if (doc.exists()) {
@@ -324,12 +365,14 @@
                     userInfo.innerHTML = `
                         <span class="font-semibold">${userData.nickname}</span> |
                         Команда: <span class="font-semibold">${userData.teamName}</span> | 
-                        Ранг: <span class="font-semibold text-indigo-600">${userData.rank}</span> | 
-                        Очки: <span class="font-semibold text-green-600">${userData.points} VP</span>
+                        Ранг: <span class="font-semibold">${userData.rank}</span> | 
+                        Очки: <span class="font-semibold text-indigo-600">${userData.points} VP</span>
                     `;
+                    // Активируем кнопки, так как данные пользователя успешно загружены
                     actionButtons.forEach(btn => btn.disabled = false);
                     gameError.textContent = '';
                 } else {
+                     // Это может произойти, если документ пользователя еще не создан или был удален
                     userInfo.textContent = "Не удалось загрузить данные профиля.";
                 }
             }, (error) => {
@@ -356,7 +399,7 @@
                 querySnapshot.forEach((doc) => {
                     teams.push({ id: doc.id, ...doc.data() });
                 });
-                teams.sort((a, b) => b.totalPoints - a.totalPoints);
+                teams.sort((a, b) => b.totalPoints - a.totalPoints); // Исправлена опечатка
                 renderTeamLeaderboard(teams);
             }, (error) => {
                 console.error("Ошибка загрузки командного рейтинга: ", error);
@@ -364,6 +407,7 @@
             });
         }
         
+        // --- ФУНКЦИИ РЕНДЕРИНГА ---
         function renderPersonalLeaderboard(users) {
             personalLeaderboard.innerHTML = '';
             users.forEach((user, index) => {
@@ -375,7 +419,6 @@
                 row.innerHTML = `
                     <td class="p-3">${index + 1}</td>
                     <td class="p-3">${user.nickname}</td>
-                    <td class="p-3">${user.rank}</td>
                     <td class="p-3">${user.teamName || 'N/A'}</td>
                     <td class="p-3 text-right">${user.points || 0}</td>
                 `;
@@ -420,41 +463,38 @@
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             authError.textContent = '';
-            const submitButton = e.currentTarget.querySelector('button');
-            const originalButtonHTML = submitButton.innerHTML;
-
-            submitButton.disabled = true;
-            submitButton.innerHTML = `<svg class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Вход...`;
-            
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
+                console.error("Ошибка входа: ", error.message);
                 authError.textContent = "Неверный email или пароль.";
-            } finally {
-                submitButton.disabled = false;
-                submitButton.innerHTML = originalButtonHTML;
             }
         });
 
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             authError.textContent = '';
+            
             const nickname = document.getElementById('register-nickname').value;
             const email = document.getElementById('register-email').value;
             const password = document.getElementById('register-password').value;
             let teamId = teamSelect.value;
             const newTeam = newTeamNameInput.value.trim();
-            
-            const submitButton = e.currentTarget.querySelector('button');
-            const originalButtonHTML = submitButton.innerHTML;
 
-            if (teamId === '') { authError.textContent = 'Пожалуйста, выберите команду.'; return; }
-            if (teamId === 'new_team' && !newTeam) { authError.textContent = 'Пожалуйста, введите название новой команды.'; return; }
+            if (teamId === '') {
+                authError.textContent = 'Пожалуйста, выберите команду.';
+                return;
+            }
+
+            if (teamId === 'new_team' && !newTeam) {
+                authError.textContent = 'Пожалуйста, введите название новой команды.';
+                return;
+            }
             
-            submitButton.disabled = true;
-            submitButton.innerHTML = `<svg class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Регистрация...`;
+            // Отключаем кнопку, чтобы избежать двойных нажатий
+            e.currentTarget.querySelector('button').disabled = true;
 
             try {
                 let finalTeamId = teamId;
@@ -463,8 +503,13 @@
                 if (teamId === 'new_team') {
                     const q = query(collection(db, "teams"), where("name", "==", newTeam));
                     const querySnapshot = await getDocs(q);
-                    if (!querySnapshot.empty) throw new Error("Команда с таким названием уже существует.");
-                    const newTeamDoc = await addDoc(collection(db, "teams"), { name: newTeam, totalPoints: 0 });
+                    if (!querySnapshot.empty) {
+                        throw new Error("Команда с таким названием уже существует.");
+                    }
+                    const newTeamDoc = await addDoc(collection(db, "teams"), {
+                        name: newTeam,
+                        totalPoints: 0
+                    });
                     finalTeamId = newTeamDoc.id;
                     finalTeamName = newTeam;
                 }
@@ -483,22 +528,31 @@
                 });
 
             } catch (error) {
-                 authError.textContent = error.message.includes("already-in-use") ? "Этот email уже зарегистрирован." : error.message || "Произошла ошибка при регистрации.";
+                 console.error("Ошибка регистрации: ", error.message);
+                 authError.textContent = error.message.includes("already-in-use") 
+                    ? "Этот email уже зарегистрирован."
+                    : error.message || "Произошла ошибка при регистрации.";
             } finally {
-                 submitButton.disabled = false;
-                 submitButton.innerHTML = originalButtonHTML;
+                 // Включаем кнопку обратно
+                 e.currentTarget.querySelector('button').disabled = false;
             }
         });
 
-        logoutButton.addEventListener('click', () => signOut(auth));
+        logoutButton.addEventListener('click', async () => {
+             try {
+                await signOut(auth);
+             } catch(error) {
+                console.error("Ошибка выхода: ", error);
+             }
+        });
 
         function addPointsHandler(e) {
             const button = e.currentTarget;
             const pointsToAdd = parseInt(button.dataset.points, 10);
             const actionName = button.querySelector('h3').textContent;
 
-            document.getElementById('modal-title').textContent = `Подтвердить "${actionName}"`;
-            document.getElementById('modal-text').textContent = `Вы уверены, что хотите добавить ${pointsToAdd} VP?`;
+            modalTitle.textContent = `Подтвердить "${actionName}"`;
+            modalText.textContent = `Вы уверены, что хотите добавить ${pointsToAdd} VP к вашему счету? Это действие нельзя будет отменить.`;
             confirmationModal.style.display = 'flex';
 
             const confirmAction = async () => {
@@ -510,28 +564,31 @@
                         const userDocRef = doc(db, "users", currentUser.uid);
                         const userDoc = await transaction.get(userDocRef);
                         
-                        if (!userDoc.exists()) throw new Error("Документ пользователя не найден!");
+                        if (!userDoc.exists()) {
+                            throw new Error("Документ пользователя не найден! Возможно, он еще не создан. Подождите пару секунд и попробуйте снова.");
+                        }
                         
                         const userData = userDoc.data();
                         const teamDocRef = doc(db, "teams", userData.teamId);
                         
                         const newPoints = userData.points + pointsToAdd;
-                        const newRank = getRank(newPoints);
-                        
-                        transaction.update(userDocRef, { points: newPoints, rank: newRank });
+                        transaction.update(userDocRef, { points: newPoints });
                         
                         const teamDoc = await transaction.get(teamDocRef);
-                        if (teamDoc.exists()) {
+                         if (teamDoc.exists()) {
                             const newTeamPoints = teamDoc.data().totalPoints + pointsToAdd;
                             transaction.update(teamDocRef, { totalPoints: newTeamPoints });
                         }
                     });
                 } catch (error) {
+                    console.error("Ошибка при добавлении очков: ", error);
                     gameError.textContent = error.message;
                 }
             };
 
-            const cancelAction = () => { confirmationModal.style.display = 'none'; };
+            const cancelAction = () => {
+                confirmationModal.style.display = 'none';
+            };
 
             modalConfirmBtn.addEventListener('click', confirmAction, { once: true });
             modalCancelBtn.addEventListener('click', cancelAction, { once: true });
