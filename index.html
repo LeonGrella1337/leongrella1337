@@ -210,7 +210,7 @@
         // <!-- Конец секции конфигурации -->
 
         // <!-- ВАЖНО: Вставьте сюда UID вашего администратора -->
-        const ADMIN_UID = "OVcZXBhCZGUEfCyffumm3tPIMWs2";
+        const ADMIN_UID = "ВАШ_АДМИНСКИЙ_UID_ЗДЕСЬ";
         // <!-- Конец секции UID -->
         
         const app = initializeApp(firebaseConfig);
@@ -346,10 +346,8 @@
                     const publicDocRef = doc(db, "users_public", user.uid);
                     const privateDocRef = doc(db, "users_private", user.uid);
                     
-                    const [publicSnap, privateSnap] = await Promise.all([
-                        getDoc(publicDocRef),
-                        getDoc(privateDocRef)
-                    ]);
+                    const publicSnap = await getDoc(publicDocRef);
+                    const privateSnap = await getDoc(privateDocRef);
 
                     if (!publicSnap.exists() || !privateSnap.exists()) {
                         await signOut(auth);
@@ -523,5 +521,48 @@
         dom.closealertmodal.addEventListener('click', () => dom.alertmodal.classList.add('hidden'));
 
     </script>
+    <!-- 
+        ВАЖНО: ОБНОВИТЕ ПРАВИЛА FIREBASE
+        Скопируйте и вставьте этот код во вкладку "Правила" (Rules) вашей Firestore Database.
+    
+        rules_version = '2';
+        service cloud.firestore {
+          match /databases/{database}/documents {
+
+            match /users_public/{userId} {
+              allow read;
+              allow write: if request.auth.uid == userId;
+            }
+
+            match /users_private/{userId}/{document=**} {
+              allow read, write: if request.auth.uid == userId;
+            }
+
+            match /shopItems/{itemId} {
+              allow read;
+              allow write: if get(/databases/$(database)/documents/users_public/$(request.auth.uid)).data.isAdmin == true;
+            }
+
+            match /eventLog/{logId} {
+                allow read;
+                allow create: if request.auth != null;
+            }
+            
+            match /global_chat/{messageId} {
+              allow read: if request.auth != null;
+              allow create: if request.auth != null && request.resource.data.senderUid == request.auth.uid;
+            }
+
+            match /team_chats/{teamName}/messages/{messageId} {
+              allow read, create: if request.auth != null && get(/databases/$(database)/documents/users_public/$(request.auth.uid)).data.team == teamName;
+            }
+
+            match /global/{state} {
+                allow read;
+                allow write: if request.auth != null;
+            }
+          }
+        }
+    -->
 </body>
 </html>
